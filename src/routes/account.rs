@@ -2,12 +2,17 @@ use actix_web::{get, post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use crate::generate::gen_uuid;
 use sqlx::Row;
-
+use crate::extractor::ApiKey;
+use bigdecimal::BigDecimal;
 
 
 #[derive(Deserialize)]
-struct CreateAccount {
+struct CreateAccountQuery {
     business_id: String,
+}
+
+#[derive(Deserialize)]
+struct CreateAccountBody {
     name: String,
 }
 
@@ -19,9 +24,9 @@ pub struct CreateAccountResponse {
 
 
 #[post("/create_account")]
-pub async fn create_account(db: web::Data<sqlx::PgPool>, props: web::Json<CreateAccount>) -> impl Responder {
+pub async fn create_account(db: web::Data<sqlx::PgPool>, _auth: ApiKey, props: web::Json<CreateAccountBody>, query: web::Query<CreateAccountQuery>) -> impl Responder {
     let id = gen_uuid().await;
-    let business_id = &props.business_id;
+    let business_id = &query.business_id;
     let name = &props.name;
 
     let result = sqlx::query(
@@ -61,11 +66,11 @@ struct GetAccountBalance {
 
 #[derive(Serialize)]
 pub struct GetAccountBalanceResponse {
-    balance: String
+    balance: BigDecimal,
 }
 
 #[get("/get_balance")]
-pub async fn get_account_balance(db: web::Data<sqlx::PgPool>, props: web::Json<GetAccountBalance>) -> impl Responder {
+pub async fn get_account_balance(db: web::Data<sqlx::PgPool>, _auth: ApiKey, props: web::Json<GetAccountBalance>) -> impl Responder {
     let id = &props.id;
 
   
@@ -83,15 +88,13 @@ pub async fn get_account_balance(db: web::Data<sqlx::PgPool>, props: web::Json<G
 
     match result {
         Ok(Some(record)) => {
-            // Convert numeric balance to string
-            let balance_str = record.get::<String, _>("balance");
+            let balance: BigDecimal = record.get("balance");
             let response = GetAccountBalanceResponse {
-                balance: balance_str,
+                balance: balance,
             };
             HttpResponse::Ok().json(response)
         }
         Ok(None) => {
-            // Account not found
             HttpResponse::NotFound().body("Account not found")
         }
         Err(err) => {
@@ -100,3 +103,4 @@ pub async fn get_account_balance(db: web::Data<sqlx::PgPool>, props: web::Json<G
         }
     }
 }
+

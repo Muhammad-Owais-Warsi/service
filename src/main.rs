@@ -1,10 +1,12 @@
 mod db;
 mod routes;
 mod generate;
+mod extractor;
 
 use db::init_db;
 use routes::business::{create_business, create_api_keys};
 use routes::account::{create_account, get_account_balance};
+use routes::transaction::{transfer, credit, debit};
 use actix_web::{web, App, HttpServer, Responder};
 
 async fn manual_hello() -> impl Responder {
@@ -24,6 +26,9 @@ async fn main() -> std::io::Result<()> {
             .service(create_api_keys)
             .service(create_account)
             .service(get_account_balance)
+            .service(transfer)
+            .service(credit)
+            .service(debit)
             .app_data(db_data.clone()) 
             .route("/hey", web::get().to(manual_hello))
     })
