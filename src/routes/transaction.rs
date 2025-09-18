@@ -3,6 +3,8 @@ use crate::extractor::ApiKey;
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, types::Uuid};
 use bigdecimal::BigDecimal;
+use chrono::Utc;
+
 
 #[derive(Deserialize)]
 struct TransferAccountQuery {
@@ -102,9 +104,43 @@ async fn transfer(db: web::Data<sqlx::PgPool>,_auth: ApiKey,props: web::Json<Tra
                 status: row.get("status"),
             };
 
+             // Insert webhook event (queue)
+            let webhook_id = Uuid::new_v4();
+            let payload = serde_json::json!({
+                "id": resp.id,
+                "type": "transfer.success",
+                "data": {
+                    "from_account_id": resp.from_account_id,
+                    "to_account_id": resp.to_account_id,
+                    "amount": resp.amount,
+                    "business_id": query.business_id,
+                },
+                "created_at": Utc::now(),
+            });
+
+            if let Err(e) = sqlx::query(
+                r#"
+                INSERT INTO webhook_logs (id, created_at, event, payload, status)
+                VALUES ($1, $2, $3, $4, 'pending')
+                "#,
+            )
+            .bind(webhook_id)
+            .bind(Utc::now())
+            .bind("transfer.success")
+            .bind(payload)
+            .execute(&mut *tx)
+            .await
+            {
+                tx.rollback().await.ok();
+                return HttpResponse::InternalServerError()
+                    .body(format!("Failed to enqueue webhook: {}", e));
+            }
+
+            // Commit both transaction + webhook
             if let Err(_) = tx.commit().await {
                 return HttpResponse::InternalServerError().body("Failed to commit transaction");
             }
+
 
             HttpResponse::Ok().json(resp)
         }
