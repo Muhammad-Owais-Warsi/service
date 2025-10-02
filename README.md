@@ -54,8 +54,6 @@ The API will be available at `http://localhost:8080`
 All API endpoints (except business creation) require an API key in the header:
 
 
-Authorization: Bearer your-api-key-here
-
 ### Endpoints
 
 #### Business Management
@@ -85,8 +83,7 @@ Content-Type: application/json
 **Create Account**
 ```bash
 POST /create_account?business_id={business_id}
-Authorization: Bearer your-api-key
-Content-Type: application/json
+x-api-key: Bearer your-api-key
 
 {
    "name:" "acc_name"
@@ -96,7 +93,7 @@ Content-Type: application/json
 **Get Account Balance**
 ```bash
 GET /get_balance?business_id={business_id}
-Authorization: Bearer your-api-key
+x-api-key: Bearer your-api-key
 {
    "id:" "acc_id"
 }
@@ -107,8 +104,8 @@ Authorization: Bearer your-api-key
 **Transfer Money**
 ```bash
 POST transfer?business_id={business_id}
-Authorization: Bearer your-api-key
-Content-Type: application/json
+x-api-key: Bearer your-api-key
+
 
 {
   "from_account_id": "acc123",
@@ -120,8 +117,8 @@ Content-Type: application/json
 **Credit Account**
 ```bash
 POST /credit?business_id={business_id}
-Authorization: Bearer your-api-key
-Content-Type: application/json
+x-api-key: Bearer your-api-key
+
 
 {
   "to_account_id": "acc123",
@@ -132,8 +129,8 @@ Content-Type: application/json
 **Debit Account**
 ```bash
 POST /debit?business_id={business_id}
-Authorization: Bearer your-api-key
-Content-Type: application/json
+x-api-key: Bearer your-api-key
+
 
 {
   "from_account_id": "acc123",
