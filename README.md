@@ -50,13 +50,11 @@ The API will be available at `http://localhost:8080`
 ## 🔑 API Documentation
 
 ### Authentication
-```
 
 All API endpoints (except business creation) require an API key in the header:
 
-```
+
 Authorization: Bearer your-api-key-here
-```
 
 ### Endpoints
 
